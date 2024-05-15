@@ -73,9 +73,35 @@ class CausalADMG:
     
     def get_siblings(self, vertex_name: str) -> list[str]:
         """
-        Returns a list of names of the parents
+        Returns a list of names of the siblings
         """
         return [s.name for s in self.vertices[vertex_name].siblings]
+    
+    def get_all_siblings(self, vertex_name: str) -> list[str]:
+        """
+        Returns a list of names of all siblings (all nodes connected to [vertex_name] by bidirected edges and siblings
+        of siblings etc)
+        """
+        q = deque()
+        
+        # first_sibs = self.get_siblings(vertex_name)
+        siblings = set()
+        
+        q.append(vertex_name)
+        
+        while len(q) > 0:
+            curr_node = q.popleft()
+            curr_siblings = self.get_siblings(curr_node)
+            for i in curr_siblings:
+                if i not in siblings:
+                    siblings.add(i)
+                    q.append(i)
+        
+        
+        siblings.discard(vertex_name)
+        
+        return siblings
+        
 
     def get_descendants(self, vertex_name: str) -> list[str]:
         """
@@ -137,12 +163,12 @@ class CausalADMG:
 
         # check m-sep criterion in graph where we remove outgoing edges A->o
         edges = []
-        for edge in self.edges:
+        for edge in self.di_edges:
             if edge[0] != a_name:
                 edges.append(edge)
 
         G_Inter = CausalADMG(self.vertices, edges, self.bi_edges)
-        return G_Inter.d_separated(a_name, y_name, z_names)
+        return G_Inter.m_separated(a_name, y_name, z_names)
 
     def draw(self):
         """
@@ -168,8 +194,56 @@ class CausalADMG:
 
         return dot
     
+    def find_valid_adjustment_set(self, treatment, outcome):
+        valid = set()
+        causer = treatment
+        causee = outcome
+        if outcome not in self.get_descendants(treatment):
+            causer, causee = causee, causer
+            
+        if causee not in self.get_descendants(causer):
+            # no causal relationship
+            return None
+            
+        parents = self.get_parents(causer)
+        for i in parents:
+            valid.add(i)
+            
+        # print(valid)
+            
+        siblings = self.get_all_siblings(causer)
+        # print("sibs", siblings)
+        for sib in siblings:
+            valid.add(sib)
+
+            for pa in self.get_parents(sib):
+                valid.add(pa)
+                
+                
+        return causer, causee, valid
+        
+    def find_minimal_adjustment_set(self, treatment, outcome):
+        valid_output = self.find_valid_adjustment_set(treatment, outcome)
+        if valid_output is None:
+            return None
+        causer, causee, optimal = valid_output
+        # print("optimal", optimal)
+        # this is a naive approach
+        min_val = set(optimal)
+        
+        all_subsets = list(chain.from_iterable(combinations(optimal, r) for r in range(len(optimal)+1)))
+
+        for i in all_subsets:
+            si = set(i)
+            if self.valid_backdoor_set(causer, causee, si):
+                # print(si)
+                if len(si) < len(min_val):
+                    min_val = si
+                    # TODO i think we can break here because it is in order
+                
+        return causer, causee, list(min_val)
     
-    def dfs(self, node, target, visited, path, paths):
+    def directed_dfs(self, node, target, visited, path, paths):
         if node == target:
             path.append(node)
             toadd = list(path) # the list() command copies it -- you get a nasty error without it
@@ -181,7 +255,7 @@ class CausalADMG:
         path.append(node)
         for child in self.get_children(node):
             if child not in visited:
-                self.dfs(child, target, visited, path, paths)
+                self.directed_dfs(child, target, visited, path, paths)
         
         path.pop()  # Remove the current node from the path
         visited.remove(node) 
@@ -190,56 +264,70 @@ class CausalADMG:
         visited = set()
         path = []
         paths = []
-        self.dfs(treatment, outcome, visited, path, paths)
+        self.directed_dfs(treatment, outcome, visited, path, paths)
         return paths
         
-    
-    
-    def find_optimal_backdoor(self, treatment, outcome):
-        # if self.d_separated(treatment, )
         
-        causer = treatment
-        causee = outcome
+    def find_instrument(self, treatment, outcome):
+        #TODO should we run an instrument test?
+        No_umeasured_confouding = CausalDAG(self.vertices, self.di_edges)
         
-        path = squash_paths(self.find_causal_paths(causer, causee))
-
-        if len(path) == 0:
-            # flip the effect
-            causer = outcome
-            causee = treatment
-            path = squash_paths(self.find_causal_paths(causer, causee))
+        candidates = [x for x in self.vertices if (x != treatment and x != outcome)]
+        
+        # need to find some set C that is a valid adjustment set for A -> Y and Z -> A
+        
+        # two ways find a set for the first and second and combine (this is not gaurenteeded to always
+        # find the set if there is one) or iterate over all the sets
+        
+        for instrument in candidates:
             
-        if len(path) == 0:
-            return None
+            valid_C = None
+            possible_confounders = [x for x in candidates if x != instrument]
+            all_subsets = list(chain.from_iterable(combinations(possible_confounders, r) for r in range(len(possible_confounders)+1)))
+            
+            for i in all_subsets:
+                si = set(i)
+                if self.valid_backdoor_set(instrument, outcome, si) and self.valid_backdoor_set(instrument, treatment, si):
+                    valid_C = si
+                    break # in order of smallest to biggest so we can stop early
+            
+            
+            if valid_C is None:
+                # there is no valid adjustment set C
+                continue
+            
+            
+            instrument_causes_treatment = not No_umeasured_confouding.d_separated(instrument, treatment, valid_C)
+            
+            # if No_umeasured_confouding.get(treatment, outcome, valid_C)
+            
+            if not instrument_causes_treatment:
+                continue
+            
+            return instrument, valid_C
+            
+        return None
         
-        optimal = set()
-        for c in path:
-            for p in self.get_parents(c):
-                if p not in path and p != causer and p != causee:
-                    optimal.add(p)
-                    
-        return causer, causee, optimal
+    
+    def find_mediator(self, treatment, outcome):
         
-    def find_minimal_optimal_backdoor(self, treatment, outcome):
-        optimal_output = self.find_optimal_backdoor(treatment, outcome)
-        if optimal_output is None:
-            return None
-        causer, causee, optimal = optimal_output
-        # print("optimal", optimal)
-        # this is a naive approach
-        min_op = set(optimal)
+        causal_paths = self.find_causal_paths(treatment, outcome)
+        candidates = [x for x in self.vertices if (x != treatment and x != outcome)]
+        valid_mediators = set(candidates)
+        for path in causal_paths:
+            valid_mediators &= set(path)
         
-        all_subsets = list(chain.from_iterable(combinations(optimal, r) for r in range(len(optimal)+1)))
+        # valid_C = None
+        for med in valid_mediators:
+            possible_confounders = [x for x in candidates if x != med]
+            all_subsets = list(chain.from_iterable(combinations(possible_confounders, r) for r in range(len(possible_confounders)+1)))
+            for i in all_subsets:
+                si = set(i)
 
-        for i in all_subsets:
-            si = set(i)
-            if self.valid_backdoor_set(causer, causee, si):
-                # print(si)
-                if len(si) < len(min_op):
-                    min_op = si
-                
-        return causer, causee, list(min_op)
-        
-        
-        
-     
+                if self.valid_backdoor_set(treatment, med, si) and self.valid_backdoor_set(med, outcome, si.union({treatment})):
+                    # valid_C = si
+
+                    return med, si
+                    
+
+        return None

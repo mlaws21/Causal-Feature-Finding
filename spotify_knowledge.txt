@@ -1,0 +1,2 @@
+0 key loudness speechiness acousticness instrumentalness tempo duration_ms
+1 track_popularity

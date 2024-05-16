@@ -1,0 +1,8 @@
+*env*
+*.csv
+*.tet
+tools/*
+
+*pycache*
+*.DS_Store*
+old/*

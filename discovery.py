@@ -6,7 +6,7 @@ import jpype.imports
 #     # return
 
 import pandas as pd
-import tools.TetradSearch as ts
+import tetrad.TetradSearch as ts
 from graphviz import Digraph
 
 
@@ -81,10 +81,32 @@ def run_pc(datafile, discrete=True, knowledge=None):
     
     if knowledge is not None:
         add_tier_knowledge(search, knowledge)
-        
-    search.print_knowledge()
 
     search.run_pc()
+    return parsePCout(search.get_string())
+
+def run_fci(datafile, discrete=True, knowledge=None):
+
+
+    data = pd.read_csv(datafile)
+    if not discrete:
+        data = data.astype({col: "float64" for col in data.columns})
+    
+    search = ts.TetradSearch(data)
+    search.set_verbose(False)
+
+    if discrete:
+        search.use_bdeu(sample_prior=10, structure_prior=0)
+        search.use_chi_square(alpha=0.1)
+    else:
+        search.use_sem_bic()
+        search.use_fisher_z(alpha=0.05)
+    
+    if knowledge is not None:
+        add_tier_knowledge(search, knowledge)
+        
+
+    search.run_fci()
     return parsePCout(search.get_string())
 
 def draw(nodes, edges):
@@ -109,8 +131,18 @@ def draw(nodes, edges):
             dot.edge(str(parent), str(child), color="blue")
         elif direction == "---":
             dot.edge(str(parent), str(child), color="brown", dir="none")
+        
+        elif direction == "<->":
+            dot.edge(str(parent), str(child), color="red", dir="both")
+            
+        elif direction == "o-o":
+            dot.edge(str(parent), str(child), color="orange", dir="none")
+            
+        elif direction == "o->":
+            dot.edge(str(parent), str(child), color="green")
+        
         else:
-            print("ERROR: bad edge type")
+            print(f"ERROR: bad edge type: {direction}")
             
 
     return dot

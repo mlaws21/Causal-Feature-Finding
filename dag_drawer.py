@@ -3,6 +3,8 @@ import tkinter.simpledialog
 from tkinter import messagebox
 import math
 import random
+import sys 
+import ast
 
 class Node:
     def __init__(self, name="None", id=-1, location=(-1,-1), text_id=-1):
@@ -115,7 +117,7 @@ class EdgeList():
         
 
 class Dag_Drawer:
-    def __init__(self, in_nodes=[], in_edges=[], size=2000):
+    def __init__(self, in_nodes=[], in_edges=[], size=2000, term=False):
         root = tk.Tk()
         root.title("DAG Drawer")
         root.bind("<Command-z>", self.undo)
@@ -155,13 +157,14 @@ class Dag_Drawer:
                           padx=10, pady=10)
         button_window = self.canvas.create_window(size - size / 20, size / 20, anchor=tk.NE, window=self.button)
         
-        print_button = tk.Button(self.canvas, text="Print Nodes and Edges", command=self.dump, highlightbackground='black', font=button_font,
+        print_button = tk.Button(self.canvas, text=f"{'Return' if term else 'Print'} Nodes and Edges", command=self.dump, highlightbackground='black', font=button_font,
                           padx=10, pady=10)
         button_window = self.canvas.create_window(size - size / 20, size - 2 * (size / 20), anchor=tk.SE, window=print_button)
         
         
         self.undo_stack = []
         self.redo_stack = []
+        self.term = term
         
         
         #important node lists
@@ -204,9 +207,12 @@ class Dag_Drawer:
 
     
     def dump(self, event=None):
-        print("Nodes:", self.node_data.dump())
-        print("Edges:", self.edge_data.dump())
-        
+ 
+        print("nodes =", self.node_data.dump())
+        print("edges =", self.edge_data.dump())
+                   
+        if self.term:
+            exit(0)
         
         
     def toggle(self, event=None):
@@ -477,7 +483,7 @@ class Dag_Drawer:
 def main():
     nodes = []
     edges = []
-    drawer = Dag_Drawer(nodes, edges)
+    drawer = Dag_Drawer(nodes, edges, term=True)
     
 if __name__ == "__main__":
     main()

@@ -1,9 +1,9 @@
 import random
 import pandas as pd
 import numpy as np
+from generating_functions import standard, downstream_shift, mixed_standard, upstream_shift
 
-def generate(starting_names, starting_ranges, downstream_names, downstream_generating_functions, downstream_parents, num_instances):
-    lower, upper = starting_ranges
+def generate(starting_names, starting_generating_boundaries, downstream_names, downstream_generating_functions, downstream_parents, num_instances):
     data = {}
     for i in starting_names:
         data[i] = []
@@ -11,7 +11,8 @@ def generate(starting_names, starting_ranges, downstream_names, downstream_gener
         data[i] = []
     
     for _ in range(num_instances):
-        for name in starting_names:
+        for name, starting_range in zip(starting_names, starting_generating_boundaries):
+            lower, upper = starting_range
             data[name].append(random.uniform(lower, upper))
     
         for name, gen, parents in zip(downstream_names, downstream_generating_functions, downstream_parents):
@@ -25,30 +26,23 @@ def generate(starting_names, starting_ranges, downstream_names, downstream_gener
         
     
     return data
-    
-NOISE = 1
-
-V3_GEN = lambda v1, v2: v1 + v2 + random.uniform(-NOISE, NOISE)
-V4_GEN = lambda v2, v3: v2 * v3 + random.uniform(-NOISE, NOISE)
-V5_GEN = lambda v2, v3: 3*v2 + v3 + random.uniform(-NOISE, NOISE)
-Y_GEN = lambda v1, v3, v4, v6: v1 * 0.4 + v3*v6*0.3 + v4*0.1 + v6 + random.uniform(-NOISE, NOISE)
-V7_GEN = lambda y: y*y*0.5 + random.uniform(-NOISE, NOISE)
-V8_GEN = lambda v2, y: v2 + y*0.2 + random.uniform(-NOISE, NOISE)
-# V8_GEN = lambda v2, y: v2 + y*0.2 + random.uniform(-NOISE, NOISE) + 5
-V9_GEN = lambda v7, v8: v7*0.4 + v8*v7*0.1 + random.uniform(-NOISE, NOISE)
 
 
 
 def main():
-    starting_names = ["V1", "V2", "V6"]
-    downstream_names = ["V3", "V4", "V5", "Y", "V7", "V8", "V9"]
-    downstream_generating_functions = [V3_GEN, V4_GEN, V5_GEN, Y_GEN, V7_GEN, V8_GEN, V9_GEN]
-    downstream_parents = [("V1", "V2"), ("V2", "V3"), ("V2", "V3"), ("V1", "V3", "V4", "V6"), ("Y"), ("V2", "Y"), ("V7", "V8")]
-    data = generate(starting_names, (0, 1), downstream_names, downstream_generating_functions, downstream_parents, 1000)
+    
+    generating_data = standard
+    
+    starting_names = generating_data["starting_names"]
+    starting_generating_boundaries = generating_data["starting_generating_boundaries"] 
+    downstream_names = generating_data["downstream_names"]
+    downstream_generating_functions = generating_data["downstream_generating_functions"]
+    downstream_parents = generating_data["downstream_parents"]
+    data = generate(starting_names, starting_generating_boundaries, downstream_names, downstream_generating_functions, downstream_parents, 1000)
     # print(data)
     
     df = pd.DataFrame(data)
-    df.to_csv("big_noise.csv", index=False)
+    df.to_csv(generating_data["name"], index=False)
     # # df = df.round(2)
     # # print(np.mean(df["Y"]))
     # # print(df["Y"])

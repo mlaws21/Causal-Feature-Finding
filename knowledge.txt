@@ -1,3 +1,2 @@
 1 Age
-2 Glucose
-3 Pregnancies DiabetesPedigreeFunction Outcome BMI SkinThickness BloodPressure Insulin
+3 Pregnancies DiabetesPedigreeFunction Outcome BMI SkinThickness BloodPressure Insulin Glucose

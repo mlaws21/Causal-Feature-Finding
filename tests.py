@@ -4,14 +4,14 @@ from tqdm import tqdm
 import torch
 from itertools import combinations
 from findsubset import calculate_causal_scores_DAG, calculate_causal_scores_ADMG
-from learning import prepare_data, LogisticRegression
+from learning import prepare_data, LogisticRegression, RandomForrest, DecisionTree, BoostedDecisionTree, BaggedDecisionTree, NeuralNetwork
 from graphs import standard_synthetic, diabetes, mixed_synthetic, upstream_shift, downstream_shift, temp
 from generating_functions import standard
 from generatedata import generate
 from binarize import binarize
 from copy import deepcopy
     
-def test_subsets(graph_dict, eval_dict=None, n=3, num_train=800, verbose=True):
+def test_subsets(Model_class, graph_dict, eval_dict=None, n=3, num_train=800, needs_inputsize=False, verbose=True):
 
     outcome = graph_dict["outcome"]
     
@@ -46,7 +46,12 @@ def test_subsets(graph_dict, eval_dict=None, n=3, num_train=800, verbose=True):
     for combo in tqdm(all_combinations, disable=(not verbose)):
         
         feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data(csvfile, num_train, outcome, n=n, subset=list(combo))
-        my_model = LogisticRegression(len(feats))
+        
+        if needs_inputsize:
+            my_model = Model_class(len(feats))
+        else:
+            my_model = Model_class()
+        
         my_model.fit(Xtrain, Ytrain, verbose=False)
         if eval_dict is not None:
             _, _, _, Xtest, Ytest = prepare_data(eval_dict["data"], num_train, graph_dict["outcome"], n=n, subset=list(combo))
@@ -56,11 +61,16 @@ def test_subsets(graph_dict, eval_dict=None, n=3, num_train=800, verbose=True):
     random_accuracy = np.mean(accuracies)
     
     feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data(csvfile, num_train, outcome, n=n, subset=ideal_subset)
-    my_model = LogisticRegression(len(feats))
-    my_model.fit(Xtrain, Ytrain, verbose=False)
+        
+    if needs_inputsize:
+        ideal_model = Model_class(len(feats))
+    else:
+        ideal_model = Model_class()
+        
+    ideal_model.fit(Xtrain, Ytrain, verbose=False)
     if eval_dict is not None:
         _, _, _, Xtest, Ytest = prepare_data(eval_dict["data"], num_train, graph_dict["outcome"], n=n, subset=list(combo))
-    ideal_accuracy = my_model.evaluate(Xtest, Ytest)
+    ideal_accuracy = ideal_model.evaluate(Xtest, Ytest)
     
     naive = torch.mean(Ytest).item()
     naive_accuracy = max(naive, 1 - naive)
@@ -93,7 +103,7 @@ def run_n_tests(n):
         
 
         for i in range(len(graph["nodes"])):
-            naive, rand, ideal = test_subsets(graph, n=i, verbose=False)
+            naive, rand, ideal = test_subsets(LogisticRegression, graph, n=i, verbose=False)
             accuracies["ideal"][i].append(ideal)
             accuracies["random"][i].append(rand)
             
@@ -109,16 +119,16 @@ def run_n_tests(n):
 
 def main():
     
-    # graph = standard_synthetic
-    # eval_graph = None
-    # for i in range(len(graph["nodes"])):
-    #     naive, rand, ideal = test_subsets(graph, eval_graph,  n=i)
-    #     print(str(i) + ":")
-    #     print("Naive:", naive)
-    #     print("Random:", rand)
-    #     print("Ideal:", ideal)
+    graph = standard_synthetic
+    eval_graph = downstream_shift
+    for i in range(len(graph["nodes"])):
+        naive, rand, ideal = test_subsets(DecisionTree, graph, eval_graph,  n=i, needs_inputsize=False)
+        print(str(i) + ":")
+        print("Naive:", naive)
+        print("Random:", rand)
+        print("Ideal:", ideal)
         
-    print(run_n_tests(100))
+    # print(run_n_tests(100))
 
         
     

@@ -46,13 +46,13 @@ def calculate_causal_scores_ADMG(data: pd.DataFrame, nodes: list[str], di_edges:
             
             valid_backdoor = G.valid_backdoor_set(causer, causee, adj_set)
             if valid_backdoor:
-                print("backdoor", node, adj_set)
+                # print("backdoor", node, adj_set)
                 causal_effect = estimator(data, causer, causee, adj_set)
             
             else: 
                 front_out = G.find_mediator(causer, causee)
                 if front_out is not None:
-                    print("frontdoor", node)
+                    # print("frontdoor", node)
                     
                     mediator, adj_set = front_out
                     causal_effect = frontdoor_ipw(data, causer, causee, mediator, adj_set)
@@ -60,7 +60,7 @@ def calculate_causal_scores_ADMG(data: pd.DataFrame, nodes: list[str], di_edges:
                 else: 
                     iv_out = G.find_instrument(causer, causee)
                     if iv_out is not None:
-                        print("iv", node)
+                        # print("iv", node)
                         
                         instrument, adj_set = iv_out
                         causal_effect = iv_adjustment(data, causer, causee, instrument, adj_set)

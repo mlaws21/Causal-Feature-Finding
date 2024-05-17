@@ -30,7 +30,7 @@ demo = {
 ### END standard sythethic generating fuctions ###
 
 ### Downstream Distribution shift sythethic generating fuctions ###
-V8_GEN_SHIFT = lambda v2, y: v2 + y*0.2 + random.uniform(-NOISE, NOISE) + 5
+V8_GEN_SHIFT = lambda v2, y: v2 + 0.2 + random.uniform(-NOISE, NOISE)
 
 downstream_shift = {
     "name": "data/downstream_shift.csv",

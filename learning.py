@@ -45,7 +45,7 @@ def prepare_data(csvfile, num_train, outcome_name, offset=True, n=None, subset=N
             feats = random.sample(feats, k=n)
     else:
         assert n == len(subset)
-        feats = subset
+        feats = list(subset)
     
     if offset:
         data.insert(1, "offset", [1.0] * len(data))
@@ -67,7 +67,7 @@ def eval_logistic(model, Xtest, Ytest):
         pred = model(Xtest)
         pred_class = (pred >= 0.5).float()
         accuracy = (pred_class == Ytest).float().mean()
-        return accuracy.item()
+        return round(accuracy.item(), 3)
 
 def eval_tree(model, Xtest, Ytest):
     count = 0
@@ -79,7 +79,7 @@ def eval_tree(model, Xtest, Ytest):
         if predictions[i] == ground[i]:
             count += 1
 
-    return(count / len(predictions))
+    return round(count / len(predictions), 3)
 
 
 class LogisticRegression(nn.Module):
@@ -119,7 +119,7 @@ class TreeTemplate():
     def __init__(self, classifier):
         self.tree = classifier
         
-    def fit(self, Xtrain, Ytrain):
+    def fit(self, Xtrain, Ytrain, verbose=False):
         self.tree.fit(Xtrain, Ytrain.flatten())
         
     def __call__(self, Xtest):
@@ -178,7 +178,7 @@ def nn_helper(num_inputs, num_hidden, hidden_size, activation=nn.ReLU()):
     return model
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_inputs, num_hidden, hidden_size, activation=nn.ReLU()):
+    def __init__(self, num_inputs, num_hidden=3, hidden_size=64, activation=nn.ReLU()):
         super(NeuralNetwork, self).__init__()
         self.model = nn_helper(num_inputs, num_hidden, hidden_size, activation=activation)
     
@@ -245,7 +245,7 @@ def plot(model, X, y):
     
 
 def main():
-    # feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("big_noise_binary.csv", 800, "Y", n=3, subset=["V6", "V7", "V3"])
+    feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("data/standard_binary.csv", 800, "Y", n=3, subset=["V6", "V7", "V3"])
     # feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("big_noise_binary.csv", 800, "Y",)
     # feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("big_noise_binary.csv", 800, "Y", n=3)
     
@@ -267,8 +267,15 @@ def main():
     # print(f'Accuracy: {eval:.4f}')
     
     
-    feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("no_noise.csv", 800, "Y", offset=False)#, n=3)
-    # model = BoostedDecisionTree()
+    feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("old/no_noise.csv", 800, "Y", offset=False)#, n=3)
+    model = BoostedDecisionTree(1)
+    # model = BaggedDecisionTree(1)
+    # model = DecisionTree(1)
+    
+    
+
+    model.fit(Xtrain, Ytrain)
+    print(model.evaluate(Xtest, Ytest))
     # model.train(Xtrain, Ytrain)
     # print(model.evaluate(Xtest, Ytest))
     # clf = tree.DecisionTreeClassifier()
@@ -276,9 +283,9 @@ def main():
     
     # tree.plot_tree(clf)
     
-    model = NeuralNetwork(len(feats), 3, 512)
-    model.fit(Xtrain, Ytrain)
-    print(model.evaluate(Xtest, Ytest))
+    # model = NeuralNetwork(len(feats), 3, 64)
+    # model.fit(Xtrain, Ytrain)
+    # print(model.evaluate(Xtest, Ytest))
 
 if __name__ == "__main__":
     main()

@@ -31,7 +31,7 @@ def generate(starting_names, starting_generating_boundaries, downstream_names, d
 
 def main():
     
-    generating_data = standard
+    generating_data = downstream_shift
     
     starting_names = generating_data["starting_names"]
     starting_generating_boundaries = generating_data["starting_generating_boundaries"] 

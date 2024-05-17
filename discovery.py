@@ -25,10 +25,11 @@ def add_tier_knowledge(tet_search, knowlegefile, cols=None):
                 
             for i in tier_data[1:]:
                 tet_search.add_to_tier(tier_num, i)
-            
+
+
 def parseEdge(e):
     spl = e.split(" ")
-    return (spl[1], spl[2], spl[3])
+    return (str(spl[1]), str(spl[2]), str(spl[3]))
    
 def parsePCout(out):
     nodes_next = False
@@ -57,8 +58,8 @@ def parsePCout(out):
         else:
             # random line
             pass
-    
-    return list(nodes), list(edges)
+    str_nodes = [str(x) for x in nodes]
+    return list(str_nodes), list(edges)
         
 # calls tetrad PC
 # returns tetrad PC search string
@@ -109,7 +110,7 @@ def run_fci(datafile, discrete=True, knowledge=None):
     search.run_fci()
     return parsePCout(search.get_string())
 
-def draw(nodes, edges):
+def draw(nodes, edges, bi_edges=None):
     """
     Method for visualizaing the DAG
     """
@@ -125,25 +126,32 @@ def draw(nodes, edges):
             height=".5",
             width=".5",
         )
-
-    for parent, direction, child in edges:
-        if direction == "-->":
+    if len(edges[0]) == 2:
+        for parent, child in edges:
             dot.edge(str(parent), str(child), color="blue")
-        elif direction == "---":
-            dot.edge(str(parent), str(child), color="brown", dir="none")
         
-        elif direction == "<->":
-            dot.edge(str(parent), str(child), color="red", dir="both")
+        if bi_edges is not None:
+            for parent, child in bi_edges:
+                dot.edge(str(parent), str(child), color="red", dir="both")
+    else: 
+        for parent, direction, child in edges:
+            if direction == "-->":
+                dot.edge(str(parent), str(child), color="blue")
+            elif direction == "---":
+                dot.edge(str(parent), str(child), color="brown", dir="none")
             
-        elif direction == "o-o":
-            dot.edge(str(parent), str(child), color="orange", dir="none")
+            elif direction == "<->":
+                dot.edge(str(parent), str(child), color="red", dir="both")
+                
+            elif direction == "o-o":
+                dot.edge(str(parent), str(child), color="orange", dir="none")
+                
+            elif direction == "o->":
+                dot.edge(str(parent), str(child), color="green")
             
-        elif direction == "o->":
-            dot.edge(str(parent), str(child), color="green")
-        
-        else:
-            print(f"ERROR: bad edge type: {direction}")
-            
+            else:
+                print(f"ERROR: bad edge type: {direction}") 
+
 
     return dot
 

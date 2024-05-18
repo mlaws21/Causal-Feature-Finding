@@ -43,6 +43,19 @@ def main():
     
     df = pd.DataFrame(data)
     df.to_csv(generating_data["name"], index=False)
+    
+    
+    
+    # starting_names = ["A", "U"]
+    # starting_generating_boundaries = [(0, 1), (0, 1)]
+    # downstream_names = ["Y"]
+    # downstream_generating_functions = [lambda a, u: a + u + random.uniform(-.3, .3)]
+    # downstream_parents = [("A", "U")]
+    # data = generate(starting_names, starting_generating_boundaries, downstream_names, downstream_generating_functions, downstream_parents, 1000)
+    
+    
+    # df = pd.DataFrame(data)
+    # df.to_csv("quick.csv", index=False)
     # # df = df.round(2)
     # # print(np.mean(df["Y"]))
     # # print(df["Y"])

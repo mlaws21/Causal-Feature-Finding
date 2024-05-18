@@ -532,7 +532,7 @@ class CausalADMG:
         
     
     def find_mediator(self, treatment, outcome):
-        
+        # currently only find single mediators
         causal_paths = self.find_causal_paths(treatment, outcome)
         candidates = [x for x in self.vertices if (x != treatment and x != outcome)]
         valid_mediators = set(candidates)

@@ -20,6 +20,8 @@ def fix_graph(nodes, edges):
                 if response == "2":
                     new_edges.append((end, "-->", start))
                     break
+                if response == "q":
+                    return
                 else:
                     print("Invalid Choice, select again")
             
@@ -40,6 +42,8 @@ def fix_graph(nodes, edges):
                     new_edges.append((start, "-->", end))
                     new_edges.append((start, "<->", end))
                     break
+                if response == "q":
+                    return
                 else:
                     print("Invalid Choice, select again")
                     

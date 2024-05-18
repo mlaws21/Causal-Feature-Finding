@@ -119,10 +119,10 @@ def run_n_tests(n):
 
 def main():
     
-    graph = standard_synthetic
-    eval_graph = downstream_shift
+    graph = diabetes
+    # eval_graph = downstream_shift
     for i in range(len(graph["nodes"])):
-        naive, rand, ideal = test_subsets(DecisionTree, graph, eval_graph,  n=i, needs_inputsize=False)
+        naive, rand, ideal = test_subsets(LogisticRegression, graph, eval_dict=None,  n=i, needs_inputsize=True)
         print(str(i) + ":")
         print("Naive:", naive)
         print("Random:", rand)

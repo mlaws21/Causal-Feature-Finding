@@ -268,9 +268,9 @@ def main():
     
     
     feats, Xtrain, Ytrain, Xtest, Ytest = prepare_data("old/no_noise.csv", 800, "Y", offset=False)#, n=3)
-    model = BoostedDecisionTree(1)
+    # model = BoostedDecisionTree(1)
     # model = BaggedDecisionTree(1)
-    # model = DecisionTree(1)
+    model = DecisionTree()
     
     
 
